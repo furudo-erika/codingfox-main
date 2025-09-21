@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Si tu veux tester l'action qui est dans ce repo (action.yml à la racine)
       - name: Run CodeFox (local action)
