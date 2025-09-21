@@ -1,0 +1,243 @@
+name: 'CodeFox - AI-Powered Pull Request Reviewer'
+description: 'CodeFox - AI-Powered Pull Request Reviewer. Stop shipping slop. Start shipping quality.'
+branding:
+  icon: 'git-merge'
+  color: 'orange'
+author: 'CodeFox'
+inputs:
+  debug:
+    required: false
+    description: 'Enable debug mode'
+    default: 'false'
+  max_files:
+    required: false
+    description:
+      'Max files to summarize and review. Less than or equal to 0 means no
+      limit.'
+    default: '150'
+  review_simple_changes:
+    required: false
+    description: 'Review even when the changes are simple'
+    default: 'false'
+  review_comment_lgtm:
+    required: false
+    description: 'Leave comments even if the patch is LGTM'
+    default: 'false'
+  path_filters:
+    required: false
+    description: |
+      The path filters, e.g., "src/**.py", "!dist/**", each line will be considered as one pattern.
+      See also
+
+      - https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
+      - https://github.com/isaacs/minimatch
+    default: |
+      !dist/**
+      !**/*.app
+      !**/*.bin
+      !**/*.bz2
+      !**/*.class
+      !**/*.db
+      !**/*.csv
+      !**/*.tsv
+      !**/*.dat
+      !**/*.dll
+      !**/*.dylib
+      !**/*.egg
+      !**/*.glif
+      !**/*.gz
+      !**/*.xz
+      !**/*.zip
+      !**/*.7z
+      !**/*.rar
+      !**/*.zst
+      !**/*.ico
+      !**/*.jar
+      !**/*.tar
+      !**/*.war
+      !**/*.lo
+      !**/*.log
+      !**/*.mp3
+      !**/*.wav
+      !**/*.wma
+      !**/*.mp4
+      !**/*.avi
+      !**/*.mkv
+      !**/*.wmv
+      !**/*.m4a
+      !**/*.m4v
+      !**/*.3gp
+      !**/*.3g2
+      !**/*.rm
+      !**/*.mov
+      !**/*.flv
+      !**/*.iso
+      !**/*.swf
+      !**/*.flac
+      !**/*.nar
+      !**/*.o
+      !**/*.ogg
+      !**/*.otf
+      !**/*.p
+      !**/*.pdf
+      !**/*.doc
+      !**/*.docx
+      !**/*.xls
+      !**/*.xlsx
+      !**/*.ppt
+      !**/*.pptx
+      !**/*.pkl
+      !**/*.pickle
+      !**/*.pyc
+      !**/*.pyd
+      !**/*.pyo
+      !**/*.pub
+      !**/*.pem
+      !**/*.rkt
+      !**/*.so
+      !**/*.ss
+      !**/*.eot
+      !**/*.exe
+      !**/*.pb.go
+      !**/*.lock
+      !**/*.ttf
+      !**/*.yaml
+      !**/*.yml
+      !**/*.cfg
+      !**/*.toml
+      !**/*.ini
+      !**/*.mod
+      !**/*.sum
+      !**/*.work
+      !**/*.json
+      !**/*.mmd
+      !**/*.svg
+      !**/*.jpeg
+      !**/*.jpg
+      !**/*.png
+      !**/*.gif
+      !**/*.bmp
+      !**/*.tiff
+      !**/*.webm
+      !**/*.woff
+      !**/*.woff2
+      !**/*.dot
+      !**/*.md5sum
+      !**/*.wasm
+      !**/*.snap
+      !**/*.parquet
+      !**/gen/**
+      !**/_gen/**
+      !**/generated/**
+      !**/@generated/**
+      !**/vendor/**
+      !**/*.min.js
+      !**/*.min.js.map
+      !**/*.min.js.css
+      !**/*.tfstate
+      !**/*.tfstate.backup
+  disable_review:
+    required: false
+    description: 'Only provide the summary and skip the code review.'
+    default: 'false'
+  disable_release_notes:
+    required: false
+    description: 'Disable release notes'
+    default: 'false'
+  openai_base_url:
+    required: false
+    description: 'The url of the openai api interface.'
+    default: 'https://api.openai.com/v1'
+  openai_light_model:
+    required: false
+    description:
+      'Model to use for simple tasks like summarizing diff on a file.'
+    default: 'gpt-3.5-turbo'
+  openai_heavy_model:
+    required: false
+    description: 'Model to use for complex tasks such as code reviews.'
+    default: 'gpt-4'
+  openai_model_temperature:
+    required: false
+    description: 'Temperature for GPT model'
+    default: '0.05'
+  openai_retries:
+    required: false
+    description:
+      'How many times to retry OpenAI API in case of timeouts or errors?'
+    default: '5'
+  openai_timeout_ms:
+    required: false
+    description: 'Timeout for OpenAI API call in millis'
+    default: '360000'
+  openai_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to OpenAI servers?'
+    default: '6'
+  github_concurrency_limit:
+    required: false
+    description: 'How many concurrent API calls to make to GitHub?'
+    default: '6'
+  system_message:
+    required: false
+    description: 'System message to be sent to OpenAI'
+    default: |
+      You are `@codefox` (aka `github-actions[bot]`), a language model 
+      trained by OpenAI. Your purpose is to act as a highly experienced 
+      software engineer and provide a thorough review of the code hunks
+      and suggest code snippets to improve key areas such as:
+        - Logic
+        - Security
+        - Performance
+        - Data races
+        - Consistency
+        - Error handling
+        - Maintainability
+        - Modularity
+        - Complexity
+        - Optimization
+        - Best practices: DRY, SOLID, KISS
+
+      Do not comment on minor code style issues, missing 
+      comments/documentation. Identify and resolve significant 
+      concerns to improve overall code quality while deliberately 
+      disregarding minor issues.
+  summarize:
+    required: false
+    description: 'The prompt for final summarization response'
+    default: |
+      Provide your final response in markdown with the following content:
+
+      - **Walkthrough**: A high-level summary of the overall change instead of 
+        specific files within 80 words.
+      - **Changes**: A markdown table of files and their summaries. Group files 
+        with similar changes together into a single row to save space.
+      - **Fox's Insight**: Below the changes, include a clever, short poem written by 
+        a wise fox to celebrate the changes. Format the poem as a quote using 
+        the ">" symbol and feel free to use emojis where relevant.
+
+      Avoid additional commentary as this summary will be added as a comment on the 
+      GitHub pull request. Use the titles "Walkthrough" and "Changes" and they must be H2.
+
+  summarize_release_notes:
+    required: false
+    description:
+      'The prompt for generating release notes in the same chat as summarize
+      stage'
+    default: |
+      Craft concise release notes for the pull request. 
+      Focus on the purpose and user impact, categorizing changes as "New Feature", "Bug Fix", 
+      "Documentation", "Refactor", "Style", "Test", "Chore", or "Revert". Provide a bullet-point list, 
+      e.g., "- New Feature: Added search functionality to the UI". Limit your response to 50-100 words 
+      and emphasize features visible to the end-user while omitting code-level details.
+  language:
+    required: false
+    description: ISO code for the response language
+    default: en-US
+  bot_icon:
+    required: false
+    description: 'The icon for the bot'
+    default: '🦊'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
